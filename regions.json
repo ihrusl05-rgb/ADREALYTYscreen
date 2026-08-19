@@ -1,0 +1,85 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "city": "ufa",
+            "name": "ufa",
+            "lat": "54.7388",
+            "lon": "55.9721",
+            "timezone": "Asia/Yekaterinburg"
+        },
+        {
+            "id": "1",
+            "name": "Nizhny Novgorod",
+            "timezone": "Europe/Moscow",
+            "city": "nn",
+            "lat": "56.3287",
+            "lon": "44.0021"
+        },
+
+        {
+            "id": "2",
+            "name": "Moscow",
+            "timezone": "Europe/Moscow",
+            "city": "msk",
+            "lat": "55.7522",
+            "lon": "37.6156"
+        },
+
+        {
+            "id": "4",
+            "name": "Orenburg",
+            "timezone": "Asia/Yekaterinburg",
+            "city": "oren",
+            "lat": "51.7727",
+            "lon": "55.0988"
+        },
+
+        {
+            "id": "5",
+            "name": "Kazan",
+            "timezone": "Europe/Moscow",
+            "city": "kazan",
+            "lat": "55.7887",
+            "lon": "49.1221"
+        },
+
+        {
+            "id": "6",
+            "name": "Sterlitamak",
+            "timezone": "Asia/Yekaterinburg",
+            "city": "str",
+            "lat": "53.6246",
+            "lon": "55.9502"
+        },
+
+        {
+            "id": "7",
+            "name": "Putilkovo",
+            "timezone": "Europe/Moscow",
+            "city": "putilkovo",
+            "lat": "55.8636",
+            "lon": "37.3908"
+        },
+
+        {
+            "id": "8",
+            "name": "Odintsovo",
+            "timezone": "Europe/Moscow",
+            "city": "odintsovo",
+            "lat": "55.6698",
+            "lon": "37.2772"
+        },
+
+        {
+            "id": "8",
+            "name": "lyubertsy",
+            "timezone": "Europe/Moscow",
+            "city": "lyubertsy",
+            "lat": "55.6887",
+            "lon": "37.9011"
+        }
+
+    ]
+
+}

@@ -1,0 +1,35 @@
+"""Шпаргалка погоды: код из Open-Meteo → человеческое название и картинка.
+
+Open-Meteo присылает числа (0 — ясно, 61 — дождь, 95 — гроза и т.д.),
+а зрителю на экране нужны слова и иконки. Здесь они и сопоставлены.
+"""
+WEATHER_CODES = {
+    0: {"label": "Ясно", "icon": "/weather-icons/0-clear.png"},
+    1: {"label": "Преимущественно ясно", "icon": "/weather-icons/1-mainly-clear.png"},
+    2: {"label": "Переменная облачность", "icon": "/weather-icons/2-partly-cloudy.png"},
+    3: {"label": "Пасмурно", "icon": "/weather-icons/3-overcast.png"},
+    45: {"label": "Туман", "icon": "/weather-icons/45-fog.png"},
+    48: {"label": "Изморозь, туман", "icon": "/weather-icons/48-rime-fog.png"},
+    51: {"label": "Слабая морось", "icon": "/weather-icons/51-drizzle-light.png"},
+    53: {"label": "Умеренная морось", "icon": "/weather-icons/53-drizzle-moderate.png"},
+    55: {"label": "Сильная морось", "icon": "/weather-icons/55-drizzle-heavy.png"},
+    56: {"label": "Слабая ледяная морось", "icon": "/weather-icons/56-freezing-drizzle-light.png"},
+    57: {"label": "Сильная ледяная морось", "icon": "/weather-icons/57-freezing-drizzle-heavy.png"},
+    61: {"label": "Небольшой дождь", "icon": "/weather-icons/61-rain-light.png"},
+    63: {"label": "Умеренный дождь", "icon": "/weather-icons/63-rain-moderate.png"},
+    65: {"label": "Сильный дождь", "icon": "/weather-icons/65-rain-heavy.png"},
+    66: {"label": "Слабый ледяной дождь", "icon": "/weather-icons/66-freezing-rain-light.png"},
+    67: {"label": "Сильный ледяной дождь", "icon": "/weather-icons/67-freezing-rain-heavy.png"},
+    71: {"label": "Небольшой снег", "icon": "/weather-icons/71-snow-light.png"},
+    73: {"label": "Умеренный снег", "icon": "/weather-icons/73-snow-moderate.png"},
+    75: {"label": "Сильный снег", "icon": "/weather-icons/75-snow-heavy.png"},
+    77: {"label": "Снежные зерна", "icon": "/weather-icons/77-snow-grains.png"},
+    80: {"label": "Небольшие ливни", "icon": "/weather-icons/80-rain-showers-light.png"},
+    81: {"label": "Умеренные ливни", "icon": "/weather-icons/81-rain-showers-moderate.png"},
+    82: {"label": "Сильные ливни", "icon": "/weather-icons/82-rain-showers-heavy.png"},
+    85: {"label": "Небольшой снегопад", "icon": "/weather-icons/85-snow-showers-light.png"},
+    86: {"label": "Сильный снегопад", "icon": "/weather-icons/86-snow-showers-heavy.png"},
+    95: {"label": "Гроза", "icon": "/weather-icons/95-thunderstorm.png"},
+    96: {"label": "Гроза с небольшим градом", "icon": "/weather-icons/96-thunderstorm-hail-light.png"},
+    99: {"label": "Гроза с сильным градом", "icon": "/weather-icons/99-thunderstorm-hail-heavy.png"},
+}
