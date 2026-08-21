@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from app.weather_codes import WEATHER_CODES
+from app.services.utils import find_city, icon_map
 
 REGIONS = json.loads(
     Path(__file__).resolve().parents[2].joinpath("regions.json").read_text(encoding="utf-8")
@@ -14,32 +15,17 @@ REGIONS = json.loads(
 
 WEEKDAYS = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
 """Полные русские названия дней — чтобы виджет показывал «Среда», а не номер 2."""
+
 WEEKDAYS_SHORT = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
 """Короткие метки для компактных карточек на экране."""
+
 MONTHS_GENITIVE = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ]
-"""Месяцы в родительном падеже: «19 августа», а не «19 август»."""
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 TIMEOUT = 10.0
-
-
-def _find_city(city: str) -> dict | None:
-    """Ищем город в справочнике; не нашли — вернём None, и виноватых нет."""
-    for item in REGIONS:
-        if item["city"] == city:
-            return item
-    return None
-
-
-def _icon_map(base_url: str) -> dict:
-    """Собираем словарь «код погоды → картинка» и сразу дописываем полный адрес сервера."""
-    return {
-        int(code): {**data, "icon": f"{base_url}{data['icon']}"}
-        for code, data in WEATHER_CODES.items()
-    }
 
 
 async def get_weather_week(city: str, base_url: str) -> list:
@@ -47,11 +33,10 @@ async def get_weather_week(city: str, base_url: str) -> list:
 
     Результат — список из 7 дней, где вместо сухих кодов уже русские названия
     («среда, 19 августа»), готовые ссылки на иконки и округлённые температуры.
-    Если города нет в справочнике или API не ответил — не паникуем,
-    а возвращаем пустой список: пусть вызывающий код решает, как поступить.
+    Если города нет в справочнике или API не ответил — возвращаем пустой список: пусть вызывающий код решает, как поступить.
     """
     try:
-        find_current_city = _find_city(city)
+        find_current_city = find_city(city)
         if not find_current_city:
             print("Параметр города на найден в списке город на получение данных о погоде на неделю")
             return []
@@ -73,7 +58,7 @@ async def get_weather_week(city: str, base_url: str) -> list:
             return []
 
         data = response.json()
-        icons = _icon_map(base_url)
+        icons = icon_map(base_url)
         current_time = datetime.now(ZoneInfo(find_current_city["timezone"])).strftime("%H:%M")
 
         new_data = []

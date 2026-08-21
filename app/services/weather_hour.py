@@ -1,33 +1,11 @@
-import json
 from datetime import datetime
-from pathlib import Path
 
 import httpx
 
-from app.weather_codes import WEATHER_CODES
-
-REGIONS = json.loads(
-    Path(__file__).resolve().parents[2].joinpath("regions.json").read_text(encoding="utf-8")
-)["data"]
+from app.services.utils import find_city, icon_map
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 TIMEOUT = 10.0
-
-
-def _find_city(city: str) -> dict | None:
-    """Ищем город в нашем справочнике; вернём None, если такого не держим."""
-    for item in REGIONS:
-        if item["city"] == city:
-            return item
-    return None
-
-
-def _icon_map(base_url: str) -> dict:
-    """Код погоды → картинка с полным адресом сервера (та же шпаргалка, что у недели)."""
-    return {
-        int(code): {**data, "icon": f"{base_url}{data['icon']}"}
-        for code, data in WEATHER_CODES.items()
-    }
 
 
 async def get_weather_hour(city: str, base_url: str) -> list:
@@ -39,7 +17,7 @@ async def get_weather_hour(city: str, base_url: str) -> list:
     возвращаем пустой список вместо исключения.
     """
     try:
-        find_current_city = _find_city(city)
+        find_current_city = find_city(city)
         if not find_current_city:
             print("Параметр города на найден в списке город на получение данных о погоде на день")
             return []
@@ -60,7 +38,7 @@ async def get_weather_hour(city: str, base_url: str) -> list:
             return []
 
         data = response.json()
-        icons = _icon_map(base_url)
+        icons = icon_map(base_url)
 
         new_data = []
         for index, item in enumerate(data["hourly"]["time"]):

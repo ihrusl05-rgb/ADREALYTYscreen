@@ -2,6 +2,7 @@ from cachetools import TTLCache
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+import asyncio
 
 from app.services.exchange_rate import get_exchange_rate
 from app.services.weather_hour import get_weather_hour
@@ -41,9 +42,10 @@ async def weather(city: str, request: Request):
     cache_key = f"DATA:{change_city}"
     if cache_key not in weather_cache:
         print("Данные получены с API")
-        data_weather_week = await get_weather_week(change_city, base_url)
-        data_weather_day = await get_weather_hour(change_city, base_url)
-        exchange_rate = await get_exchange_rate()
+        data_weather_week, data_weather_day, exchange_rate = await asyncio.gather(
+            get_weather_week(change_city, base_url),
+            get_weather_hour(change_city, base_url),
+            get_exchange_rate(),)
 
         if not data_weather_week or not data_weather_day:
             return JSONResponse(
