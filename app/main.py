@@ -1,12 +1,20 @@
+import logging
+import asyncio
+
 from cachetools import TTLCache
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-import asyncio
+
 
 from app.services.exchange_rate import get_exchange_rate
 from app.services.weather_hour import get_weather_hour
 from app.services.weather_week import get_weather_week
+
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Weather API", docs_url=None, redoc_url=None)
 """Точка входа виджета: единственный API, который будет видеть внешний мир."""
@@ -41,7 +49,7 @@ async def weather(city: str, request: Request):
 
     cache_key = f"DATA:{change_city}"
     if cache_key not in weather_cache:
-        print("Данные получены с API")
+        logger.debug("Данные получены с API")
         data_weather_week, data_weather_day, exchange_rate = await asyncio.gather(
             get_weather_week(change_city, base_url),
             get_weather_hour(change_city, base_url),
@@ -66,6 +74,6 @@ async def weather(city: str, request: Request):
             "exchangeRate": exchange_rate,
         }
     else:
-        print("Данные из кэша")
+        logger.debug("Данные из кэша")
 
     return {"result": weather_cache[cache_key]}

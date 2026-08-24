@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 import httpx
 
@@ -6,6 +7,8 @@ from app.services.utils import find_city, icon_map
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 TIMEOUT = 10.0
+
+logger = logging.getLogger(__name__)
 
 
 async def get_weather_hour(city: str, base_url: str) -> list:
@@ -19,7 +22,7 @@ async def get_weather_hour(city: str, base_url: str) -> list:
     try:
         find_current_city = find_city(city)
         if not find_current_city:
-            print("Параметр города на найден в списке город на получение данных о погоде на день")
+            logger.warning("Город %s не найден", city)
             return []
 
         params = {
@@ -34,7 +37,7 @@ async def get_weather_hour(city: str, base_url: str) -> list:
             response = await client.get(FORECAST_URL, params=params)
 
         if response.status_code != 200:
-            print(f"Error ошибка API {response.status_code} - {response.reason_phrase}")
+            logger.error("Open-Meteo HTTP error %s - %s", response.status_code, response.reason_phrase)
             return []
 
         data = response.json()
@@ -56,5 +59,5 @@ async def get_weather_hour(city: str, base_url: str) -> list:
         return new_data
 
     except Exception as error:
-        print(f"Ошибка API open-meteo {getattr(error, 'name', type(error).__name__)}: {error}")
+        logger.exception(f"Ошибка API open-meteo {getattr(error, 'name', type(error).__name__)}: {error}")
         return []

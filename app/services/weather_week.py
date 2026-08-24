@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+import logging
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -7,6 +8,8 @@ import httpx
 
 from app.weather_codes import WEATHER_CODES
 from app.services.utils import find_city, icon_map
+
+logger = logging.getLogger(__name__)
 
 REGIONS = json.loads(
     Path(__file__).resolve().parents[2].joinpath("regions.json").read_text(encoding="utf-8")
@@ -38,7 +41,7 @@ async def get_weather_week(city: str, base_url: str) -> list:
     try:
         find_current_city = find_city(city)
         if not find_current_city:
-            print("Параметр города на найден в списке город на получение данных о погоде на неделю")
+            logger.warning("Город %s не найден", city)
             return []
 
         params = {
@@ -54,7 +57,7 @@ async def get_weather_week(city: str, base_url: str) -> list:
             response = await client.get(FORECAST_URL, params=params)
 
         if response.status_code != 200:
-            print(f"Open-Meteo HTTP error: {response.status_code}")
+            logger.error("Open-Meteo HTTP error %s", response.status_code)
             return []
 
         data = response.json()
@@ -83,5 +86,5 @@ async def get_weather_week(city: str, base_url: str) -> list:
         return new_data
 
     except Exception as error:
-        print(f"Ошибка API open-meteo {getattr(error, 'name', type(error).__name__)}: {error}")
+        logger.exception(f"Ошибка API open-meteo {getattr(error, 'name', type(error).__name__)}: {error}")
         return []
