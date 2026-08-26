@@ -10,16 +10,16 @@ REGIONS = json.loads(
 
 
 def find_city(city: str) -> dict | None:
-    """Ищем город в справочнике; не нашли — вернём None, и виноватых нет."""
+    """Ищем город в regions; не нашли — вернём None"""
     for item in REGIONS:
         if item["city"] == city:
             return item
     return None
 
 
-def icon_map(base_url: str) -> dict:
-    """Собираем словарь «код погоды → картинка» и сразу дописываем полный адрес сервера."""
+def icon_map() -> dict:
+    """Собираем словарь «код погоды → картинка» """
     return {
-        int(code): {**data, "icon": f"{base_url}{data['icon']}"}
+        int(code): data.copy()
         for code, data in WEATHER_CODES.items()
     }

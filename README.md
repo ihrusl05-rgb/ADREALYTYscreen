@@ -44,7 +44,7 @@ uv run uvicorn app.main:app --port 7500
         "date": "среда, 19 августа",
         "week": "СР",
         "day": 19,
-        "weather_code": { "label": "Туман", "icon": "http://host/weather-icons/45-fog.png" },
+        "weather_code": { "label": "Туман", "icon": "/weather-icons/45-fog.png" },
         "temperature_2m_max": 23,
         "temperature_2m_min": 14,
         "apparent_temperature_max": 23,
@@ -56,7 +56,7 @@ uv run uvicorn app.main:app --port 7500
       {
         "time": "10:00",
         "temperature_2m": 16,
-        "weather_code": { "label": "Пасмурно", "icon": "http://host/weather-icons/3-overcast.png" },
+        "weather_code": { "label": "Пасмурно", "icon": "/weather-icons/3-overcast.png" },
         "precipitation_probability": 40,
         "date": "19.08.2026"
       }
@@ -75,7 +75,9 @@ uv run uvicorn app.main:app --port 7500
 
 | Код | Ситуация |
 |---|---|
-| `502` | Город не найден в `regions.json` или недоступен внешний API (в теле — частичные данные) |
+| `404` | Город не найден в `regions.json` |
+| `502` | Внешний API ответил некорректно |
+| `503` | Внешний API временно недоступен |
 | `204` | Запрос `/favicon.ico` |
 
 ## Поддерживаемые города
