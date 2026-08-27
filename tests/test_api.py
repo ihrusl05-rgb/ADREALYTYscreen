@@ -11,11 +11,9 @@ def test_favicon(client):
 
 
 def test_unknown_city_returns_404_without_upstream_calls(client, monkeypatch):
-    """Неизвестный город — вежливый отказ: 404 без вызовов внешних API.
-
+    """Неизвестный город — отказ: 404 без вызовов внешних API.
     Курс валют мокаем, чтобы тест не ходил в интернет: сами погодные сервисы
-    вернут пустые списки и без сети.
-    """
+    вернут пустые списки и без сети."""
     async def fake_rate():
         return {}
 
@@ -58,10 +56,8 @@ def test_upstream_bad_response_returns_502(client, monkeypatch):
 
 def test_city_response_structure(client, monkeypatch):
     """Договор с виджетом: всегда три блока, 7 дней, 24 часа и иконки с адресом.
-
     Данные подменяем заглушками — здесь мы проверяем не погоду,
-    а форму ответа: не потеряет ли сервер блоки и количество записей.
-    """
+    а форму ответа: не потеряет ли сервер блоки и количество записей."""
     async def fake_week(*a, **k):
         return [
             {"weather_code": {"label": "Ясно", "icon": "/weather-icons/0-clear.png"}}
@@ -88,10 +84,8 @@ def test_city_response_structure(client, monkeypatch):
 
 def test_cache_used_on_second_request(client, monkeypatch):
     """Кэш работает: второй запрос того же города не лезет в «интернет».
-
     Считаем вызовы подменённого сервиса: если их один (а не два),
-    значит второй ответ пришёл из кэша, как задумано.
-    """
+    значит второй ответ пришёл из кэша, как задумано."""
     calls = {"n": 0}
 
     async def fake_week(*a, **k):
@@ -110,7 +104,7 @@ def test_cache_used_on_second_request(client, monkeypatch):
 
     client.get("/msk")
     client.get("/msk")
-    assert calls["n"] == 1  # второй запрос — из кэша
+    assert calls["n"] == 1 
 
 
 def test_static_icons(client):

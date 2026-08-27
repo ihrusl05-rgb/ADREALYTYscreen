@@ -8,10 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 
 from app.services.exchange_rate import get_exchange_rate
-from app.services.errors import (
-    UpstreamBadResponseError,
-    UpstreamUnavailableError,
-)
+from app.services.errors import (UpstreamBadResponseError,UpstreamUnavailableError,)
 from app.services.utils import find_city
 from app.services.weather_hour import get_weather_hour
 from app.services.weather_week import get_weather_week
@@ -39,7 +36,6 @@ def root():
 @app.get("/{city}")
 async def weather(city: str):
     """Главный метод: по названию города отдаём неделю, сутки и курсы валют.
-
     Сначала смотрим в кэш — если город уже просили в последний час, отдаём
     сохранённое. Иначе тянем всё параллельно из трёх источников, кладём в кэш
     и возвращаем. Неизвестный город получает 404, временная недоступность
@@ -57,24 +53,22 @@ async def weather(city: str):
     cache_key = f"DATA:{change_city}"
     if cache_key not in weather_cache:
         logger.debug("Данные получены с API")
-        try:
-            data_weather_week, data_weather_day, exchange_rate = await asyncio.gather(
-                get_weather_week(change_city),
-                get_weather_hour(change_city),
-                get_exchange_rate(),
-            )
-        except UpstreamUnavailableError as error:
-            logger.exception("Внешний сервис временно недоступен")
-            raise HTTPException(
-                status_code=503,
-                detail="Сервис погоды временно недоступен",
-            ) from error
-        except UpstreamBadResponseError as error:
-            logger.exception("Внешний сервис вернул некорректные данные")
-            raise HTTPException(
-                status_code=502,
-                detail="Сервис погоды вернул некорректные данные",
-            ) from error
+        results = await asyncio.gather(
+            get_weather_week(change_city),
+            get_weather_hour(change_city),
+            get_exchange_rate(),
+            return_exceptions=True,
+        )
+
+        for i, result in enumerate(results):
+            if isinstance(result, UpstreamUnavailableError):
+                logger.warning("Внешний сервис временно недоступен (%s)", ["weather_week", "weather_hour", "exchange_rate"][i])
+                raise HTTPException(status_code=503,detail="Сервис погоды временно недоступен",) from result
+            if isinstance(result, UpstreamBadResponseError):
+                logger.warning("Внешний сервис вернул некорректные данные (%s)", ["weather_week", "weather_hour", "exchange_rate"][i])
+                raise HTTPException(status_code=502,detail="Сервис погоды вернул некорректные данные",) from result
+
+        data_weather_week, data_weather_day, exchange_rate = results
 
         if not data_weather_week or not data_weather_day:
             return JSONResponse(status_code=502, content={

@@ -95,6 +95,4 @@ async def get_weather_week(city: str) -> list:
         return result
     except (ValueError, TypeError, KeyError, IndexError) as error:
         logger.exception("Некорректный ответ Open-Meteo для %s", city)
-        raise UpstreamBadResponseError(
-            "Open-Meteo вернул данные в неожиданном формате"
-        ) from error
+        raise UpstreamBadResponseError("Open-Meteo вернул данные в неожиданном формате") from error

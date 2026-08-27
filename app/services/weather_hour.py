@@ -16,7 +16,6 @@ async def get_weather_hour(city: str) -> list:
     """Получить и преобразовать почасовой прогноз на ближайшие 24 часа."""
     current_city = find_city(city)
     if not current_city:
-        # Обычно город проверяется в main.py до вызова сервиса.
         return []
 
     params = {
@@ -42,9 +41,7 @@ async def get_weather_hour(city: str) -> list:
         raise UpstreamUnavailableError("Open-Meteo временно недоступен")
     if response.status_code != 200:
         logger.error("Open-Meteo вернул неожиданный HTTP %s", response.status_code)
-        raise UpstreamBadResponseError(
-            f"Open-Meteo вернул HTTP {response.status_code}"
-        )
+        raise UpstreamBadResponseError(f"Open-Meteo вернул HTTP {response.status_code}")
 
     try:
         data = response.json()
@@ -71,6 +68,4 @@ async def get_weather_hour(city: str) -> list:
         ]
     except (ValueError, TypeError, KeyError, IndexError) as error:
         logger.exception("Некорректный ответ Open-Meteo для %s", city)
-        raise UpstreamBadResponseError(
-            "Open-Meteo вернул данные в неожиданном формате"
-        ) from error
+        raise UpstreamBadResponseError("Open-Meteo вернул данные в неожиданном формате") from error
