@@ -10,29 +10,26 @@ from app.weather_codes import WEATHER_CODES
 logger = logging.getLogger(__name__)
 
 REGIONS = json.loads(Path(__file__).resolve().parents[2].joinpath("regions.json").read_text(encoding="utf-8"))["data"]
-"""Наш справочник городов: кто живёт в проекте, с координатами и часовым поясом."""
 
 TIMEOUT = 10.0
+FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+
+ICONS = {
+    int(code): data.copy()
+    for code, data in WEATHER_CODES.items()
+}
 
 
 def find_city(city: str) -> dict | None:
-    """Ищем город в regions; не нашли — вернём None"""
     for item in REGIONS:
         if item["city"] == city:
             return item
     return None
 
 
-def icon_map() -> dict:
-    """Собирает словарь «код погоды → картинка»"""
-    return {
-        int(code): data.copy()
-        for code, data in WEATHER_CODES.items()
-    }
-
-
 async def fetch_json(url: str, params: dict, service_name: str = "сервис") -> dict:
     """Делает GET-запрос и возвращает JSON.
+
     Сетевые ошибки и таймауты → UpstreamUnavailableError.
     HTTP 429/5xx → UpstreamUnavailableError.
     Другие не-200 → UpstreamBadResponseError.

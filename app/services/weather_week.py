@@ -3,22 +3,18 @@ import logging
 from zoneinfo import ZoneInfo
 
 from app.services.errors import UpstreamBadResponseError
-from app.services.utils import fetch_json, find_city, icon_map
+from app.services.utils import FORECAST_URL, ICONS, fetch_json, find_city
 
 logger = logging.getLogger(__name__)
 
 WEEKDAYS = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
-"""Полные русские названия дней — чтобы виджет показывал «Среда», а не номер 2."""
 
 WEEKDAYS_SHORT = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
-"""Короткие метки для компактных карточек на экране."""
 
 MONTHS_GENITIVE = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ]
-
-FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
 
 async def get_weather_week(city: str) -> list:
@@ -55,7 +51,6 @@ async def get_weather_week(city: str) -> list:
         if not all(len(values) == len(dates) for values in fields.values()):
             raise ValueError("массивы daily имеют разную длину")
 
-        icons = icon_map()
         current_time = datetime.now(ZoneInfo(current_city["timezone"])).strftime("%H:%M")
         result = []
         for index, day in enumerate(dates):
@@ -66,7 +61,7 @@ async def get_weather_week(city: str) -> list:
                 "date": f"{weekday_full[0].lower()}{weekday_full[1:]}, {date.day} {MONTHS_GENITIVE[date.month - 1]}",
                 "week": WEEKDAYS_SHORT[date.weekday()],
                 "day": date.day,
-                "weather_code": icons.get(fields["weather_code"][index]),
+                "weather_code": ICONS.get(fields["weather_code"][index]),
                 "temperature_2m_max": int(fields["temperature_2m_max"][index]),
                 "temperature_2m_min": int(fields["temperature_2m_min"][index]),
                 "apparent_temperature_max": int(fields["apparent_temperature_max"][index]),

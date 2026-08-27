@@ -1,13 +1,12 @@
-import json
 import logging
 import math
 
-import httpx
+from app.services.utils import fetch_json
 
 URL = "https://www.cbr-xml-daily.ru/daily_json.js"
-TIMEOUT = 10.0
 
 logger = logging.getLogger(__name__)
+
 
 async def get_exchange_rate() -> dict:
     """Курсы евро и доллара на сегодня — берём с официального сайта ЦБ РФ.
@@ -17,14 +16,12 @@ async def get_exchange_rate() -> dict:
     тогда вернём пустой словарь, и виджет просто покажет без курсов.
     """
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            response = await client.get(URL)
+        data = await fetch_json(URL, {}, "ЦБ РФ")
+    except Exception as error:
+        logger.warning("ЦБ РФ недоступен: %s", error)
+        return {}
 
-        if response.status_code != 200:
-            logger.warning("CBR HTTP error %s - %s", response.status_code, response.reason_phrase)
-            return {}
-
-        data = json.loads(response.content.decode("utf-8-sig"))
+    try:
         return {
             "eur": {
                 "name": data["Valute"]["EUR"]["Name"],
@@ -35,7 +32,6 @@ async def get_exchange_rate() -> dict:
                 "value": math.floor(float(data["Valute"]["USD"]["Value"])),
             },
         }
-
-    except Exception as error:
-        logger.exception(f"Ошибка API cbr-xml-daily {type(error).__name__}: {error}")
+    except (KeyError, TypeError, ValueError) as error:
+        logger.warning("Некорректный ответ ЦБ РФ: %s", error)
         return {}

@@ -2,9 +2,7 @@ from datetime import datetime
 import logging
 
 from app.services.errors import UpstreamBadResponseError
-from app.services.utils import fetch_json, find_city, icon_map
-
-FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+from app.services.utils import FORECAST_URL, ICONS, fetch_json, find_city
 
 logger = logging.getLogger(__name__)
 
@@ -39,17 +37,17 @@ async def get_weather_hour(city: str) -> list:
         )):
             raise ValueError("массивы hourly имеют разную длину")
 
-        icons = icon_map()
-        return [
-            {
-                "time": datetime.strptime(item, "%Y-%m-%dT%H:%M").strftime("%H:%M"),
+        result = []
+        for index, item in enumerate(times):
+            dt = datetime.strptime(item, "%Y-%m-%dT%H:%M")
+            result.append({
+                "time": dt.strftime("%H:%M"),
                 "temperature_2m": int(temperatures[index]),
-                "weather_code": icons.get(weather_codes[index]),
+                "weather_code": ICONS.get(weather_codes[index]),
                 "precipitation_probability": precipitation[index],
-                "date": datetime.strptime(item, "%Y-%m-%dT%H:%M").strftime("%d.%m.%Y"),
-            }
-            for index, item in enumerate(times)
-        ]
+                "date": dt.strftime("%d.%m.%Y"),
+            })
+        return result
     except (ValueError, TypeError, KeyError, IndexError) as error:
         logger.exception("Некорректный ответ Open-Meteo для %s", city)
         raise UpstreamBadResponseError(
