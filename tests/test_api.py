@@ -10,8 +10,8 @@ def test_favicon(client):
     assert client.get("/favicon.ico").status_code == 204
 
 
-def test_unknown_city_returns_502(client, monkeypatch):
-    """Неизвестный город — вежливый отказ: 502 и честное «такого города у нас нет».
+def test_unknown_city_returns_404_without_upstream_calls(client, monkeypatch):
+    """Неизвестный город — вежливый отказ: 404 без вызовов внешних API.
 
     Курс валют мокаем, чтобы тест не ходил в интернет: сами погодные сервисы
     вернут пустые списки и без сети.
@@ -21,10 +21,39 @@ def test_unknown_city_returns_502(client, monkeypatch):
 
     monkeypatch.setattr("app.main.get_exchange_rate", fake_rate)
     r = client.get("/london")
-    assert r.status_code == 502
+    assert r.status_code == 404
     data = r.json()
-    assert data["error"] == "Weather API city not found"
-    assert "exchangeRate" in data["result"]
+    assert "не поддерживается" in data["detail"]
+
+
+def test_upstream_unavailable_returns_503(client, monkeypatch):
+    """Сетевая/временная ошибка внешнего сервиса преобразуется в 503."""
+    from app.services.errors import UpstreamUnavailableError
+
+    async def unavailable(*a, **k):
+        raise UpstreamUnavailableError("Open-Meteo недоступен")
+
+    monkeypatch.setattr("app.main.get_weather_week", unavailable)
+    monkeypatch.setattr("app.main.get_weather_hour", unavailable)
+    monkeypatch.setattr("app.main.get_exchange_rate", unavailable)
+    r = client.get("/ufa")
+    assert r.status_code == 503
+    assert r.json()["detail"] == "Сервис погоды временно недоступен"
+
+
+def test_upstream_bad_response_returns_502(client, monkeypatch):
+    """Некорректный ответ внешнего сервиса преобразуется в 502."""
+    from app.services.errors import UpstreamBadResponseError
+
+    async def bad_response(*a, **k):
+        raise UpstreamBadResponseError("Некорректный ответ")
+
+    monkeypatch.setattr("app.main.get_weather_week", bad_response)
+    monkeypatch.setattr("app.main.get_weather_hour", bad_response)
+    monkeypatch.setattr("app.main.get_exchange_rate", bad_response)
+    r = client.get("/ufa")
+    assert r.status_code == 502
+    assert r.json()["detail"] == "Сервис погоды вернул некорректные данные"
 
 
 def test_city_response_structure(client, monkeypatch):
@@ -35,7 +64,7 @@ def test_city_response_structure(client, monkeypatch):
     """
     async def fake_week(*a, **k):
         return [
-            {"weather_code": {"label": "Ясно", "icon": "http://testserver/weather-icons/0-clear.png"}}
+            {"weather_code": {"label": "Ясно", "icon": "/weather-icons/0-clear.png"}}
         ] * 7
 
     async def fake_hour(*a, **k):

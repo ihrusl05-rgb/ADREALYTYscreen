@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 
 import httpx
@@ -6,6 +7,7 @@ import httpx
 URL = "https://www.cbr-xml-daily.ru/daily_json.js"
 TIMEOUT = 10.0
 
+logger = logging.getLogger(__name__)
 
 async def get_exchange_rate() -> dict:
     """Курсы евро и доллара на сегодня — берём с официального сайта ЦБ РФ.
@@ -20,7 +22,7 @@ async def get_exchange_rate() -> dict:
             response = await client.get(URL)
 
         if response.status_code != 200:
-            print(f"Error ошибка API {response.status_code} - {response.reason_phrase}")
+            logger.warning("CBR HTTP error %s - %s", response.status_code, response.reason_phrase)
             return {}
 
         data = json.loads(response.content.decode("utf-8-sig"))
@@ -36,5 +38,5 @@ async def get_exchange_rate() -> dict:
         }
 
     except Exception as error:
-        print(f"Ошибка API cbr-xml-daily {type(error).__name__}: {error}")
+        logger.exception(f"Ошибка API cbr-xml-daily {type(error).__name__}: {error}")
         return {}

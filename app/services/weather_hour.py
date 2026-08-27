@@ -1,60 +1,76 @@
 from datetime import datetime
+import logging
 
 import httpx
 
+from app.services.errors import UpstreamBadResponseError, UpstreamUnavailableError
 from app.services.utils import find_city, icon_map
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 TIMEOUT = 10.0
 
+logger = logging.getLogger(__name__)
 
-async def get_weather_hour(city: str, base_url: str) -> list:
-    """Почасовой прогноз на ближайшие сутки: температура, погода и шанс дождя.
 
-    Как и неделя, запрашивается у Open-Meteo, только с почасовой разбивкой.
-    На выходе 24 записи вида «09:00, +15°, Пасмурно, 40% осадков» — удобно
-    для ленты прогноза на экране. Если город неизвестен или API сбоит —
-    возвращаем пустой список вместо исключения.
-    """
+async def get_weather_hour(city: str) -> list:
+    """Получить и преобразовать почасовой прогноз на ближайшие 24 часа."""
+    current_city = find_city(city)
+    if not current_city:
+        # Обычно город проверяется в main.py до вызова сервиса.
+        return []
+
+    params = {
+        "latitude": current_city["lat"],
+        "longitude": current_city["lon"],
+        "hourly": "temperature_2m,weather_code,precipitation_probability",
+        "forecast_hours": "24",
+        "timezone": current_city["timezone"],
+    }
+
     try:
-        find_current_city = find_city(city)
-        if not find_current_city:
-            print("Параметр города на найден в списке город на получение данных о погоде на день")
-            return []
-
-        params = {
-            "latitude": find_current_city["lat"],
-            "longitude": find_current_city["lon"],
-            "hourly": "temperature_2m,weather_code,precipitation_probability",
-            "forecast_hours": "24",
-            "timezone": find_current_city["timezone"],
-        }
-
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             response = await client.get(FORECAST_URL, params=params)
+    except (httpx.TimeoutException, httpx.NetworkError) as error:
+        logger.warning("Open-Meteo недоступен для %s: %s", city, error)
+        raise UpstreamUnavailableError("Open-Meteo недоступен") from error
+    except httpx.RequestError as error:
+        logger.warning("Ошибка запроса Open-Meteo для %s: %s", city, error)
+        raise UpstreamUnavailableError("Open-Meteo недоступен") from error
 
-        if response.status_code != 200:
-            print(f"Error ошибка API {response.status_code} - {response.reason_phrase}")
-            return []
+    if response.status_code == 429 or response.status_code >= 500:
+        logger.warning("Open-Meteo временно недоступен: HTTP %s", response.status_code)
+        raise UpstreamUnavailableError("Open-Meteo временно недоступен")
+    if response.status_code != 200:
+        logger.error("Open-Meteo вернул неожиданный HTTP %s", response.status_code)
+        raise UpstreamBadResponseError(
+            f"Open-Meteo вернул HTTP {response.status_code}"
+        )
 
+    try:
         data = response.json()
-        icons = icon_map(base_url)
+        hourly = data["hourly"]
+        times = hourly["time"]
+        temperatures = hourly["temperature_2m"]
+        weather_codes = hourly["weather_code"]
+        precipitation = hourly["precipitation_probability"]
+        if not all(len(values) == len(times) for values in (
+            temperatures, weather_codes, precipitation
+        )):
+            raise ValueError("массивы hourly имеют разную длину")
 
-        new_data = []
-        for index, item in enumerate(data["hourly"]["time"]):
-            hour_weather_code = data["hourly"]["weather_code"][index]
-            new_data.append(
-                {
-                    "time": datetime.strptime(item, "%Y-%m-%dT%H:%M").strftime("%H:%M"),
-                    "temperature_2m": int(data["hourly"]["temperature_2m"][index]),
-                    "weather_code": icons.get(hour_weather_code),
-                    "precipitation_probability": data["hourly"]["precipitation_probability"][index],
-                    "date": datetime.strptime(item, "%Y-%m-%dT%H:%M").strftime("%d.%m.%Y"),
-                }
-            )
-
-        return new_data
-
-    except Exception as error:
-        print(f"Ошибка API open-meteo {getattr(error, 'name', type(error).__name__)}: {error}")
-        return []
+        icons = icon_map()
+        return [
+            {
+                "time": datetime.strptime(item, "%Y-%m-%dT%H:%M").strftime("%H:%M"),
+                "temperature_2m": int(temperatures[index]),
+                "weather_code": icons.get(weather_codes[index]),
+                "precipitation_probability": precipitation[index],
+                "date": datetime.strptime(item, "%Y-%m-%dT%H:%M").strftime("%d.%m.%Y"),
+            }
+            for index, item in enumerate(times)
+        ]
+    except (ValueError, TypeError, KeyError, IndexError) as error:
+        logger.exception("Некорректный ответ Open-Meteo для %s", city)
+        raise UpstreamBadResponseError(
+            "Open-Meteo вернул данные в неожиданном формате"
+        ) from error
