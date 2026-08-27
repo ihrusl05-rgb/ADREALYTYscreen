@@ -2,10 +2,8 @@ from datetime import datetime
 import logging
 from zoneinfo import ZoneInfo
 
-import httpx
-
-from app.services.errors import UpstreamBadResponseError, UpstreamUnavailableError
-from app.services.utils import find_city, icon_map
+from app.services.errors import UpstreamBadResponseError
+from app.services.utils import fetch_json, find_city, icon_map
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +19,12 @@ MONTHS_GENITIVE = [
 ]
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
-TIMEOUT = 10.0
 
 
 async def get_weather_week(city: str) -> list:
     """Получить и преобразовать прогноз Open-Meteo на 7 дней."""
     current_city = find_city(city)
     if not current_city:
-        # Обычно город проверяется в main.py до вызова сервиса.
         return []
 
     params = {
@@ -41,26 +37,11 @@ async def get_weather_week(city: str) -> list:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            response = await client.get(FORECAST_URL, params=params)
-    except (httpx.TimeoutException, httpx.NetworkError) as error:
-        logger.warning("Open-Meteo недоступен для %s: %s", city, error)
-        raise UpstreamUnavailableError("Open-Meteo недоступен") from error
-    except httpx.RequestError as error:
-        logger.warning("Ошибка запроса Open-Meteo для %s: %s", city, error)
-        raise UpstreamUnavailableError("Open-Meteo недоступен") from error
-
-    if response.status_code == 429 or response.status_code >= 500:
-        logger.warning("Open-Meteo временно недоступен: HTTP %s", response.status_code)
-        raise UpstreamUnavailableError("Open-Meteo временно недоступен")
-    if response.status_code != 200:
-        logger.error("Open-Meteo вернул неожиданный HTTP %s", response.status_code)
-        raise UpstreamBadResponseError(
-            f"Open-Meteo вернул HTTP {response.status_code}"
-        )
+        data = await fetch_json(FORECAST_URL, params, "Open-Meteo")
+    except Exception:
+        raise
 
     try:
-        data = response.json()
         daily = data["daily"]
         dates = daily["time"]
         fields = {
